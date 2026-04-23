@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <title>Calculadora Pro</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none; /* evita seleção de texto nos botões */
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', system-ui, -apple-system, 'Roboto', sans-serif;
+      background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #000000);
+      background-size: 400% 400%;
+      animation: gradient 12s ease infinite;
+    }
+
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .app {
+      width: 100%;
+      max-width: 400px;
+      padding: 15px;
+    }
+
+    .panel {
+      background: rgba(0, 0, 0, 0.75);
+      border-radius: 28px;
+      padding: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(14px);
+    }
+
+    .clock {
+      text-align: center;
+      color: #00ffaa;
+      font-size: 1.4rem;
+      font-weight: 500;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+      font-family: monospace;
+      text-shadow: 0 0 4px #00ffaa80;
+    }
+
+    .display {
+      background: #0a0f0e;
+      color: #00ff90;
+      font-size: 2.6rem;
+      padding: 20px 18px;
+      border-radius: 24px;
+      text-align: right;
+      margin-bottom: 20px;
+      font-family: 'Courier New', 'Fira Code', monospace;
+      font-weight: 600;
+      letter-spacing: 1px;
+      word-break: break-word;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      box-shadow: inset 0 0 6px #00ff9020, 0 2px 4px rgba(0,0,0,0.3);
+      border: 1px solid #2a4a3a;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    button {
+      padding: 18px 0;
+      border: none;
+      border-radius: 28px;
+      font-size: 1.35rem;
+      font-weight: 600;
+      background: #1e1f22;
+      color: #f0f0f0;
+      transition: 0.08s linear;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #0a0a0a;
+      font-family: inherit;
+    }
+
+    button:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #0a0a0a;
+      background: #2f3035;
+    }
+
+    .operator {
+      background: #ff9500;
+      color: white;
+      text-shadow: 0 1px 1px #b45f00;
+    }
+
+    .operator:active {
+      background: #e08600;
+    }
+
+    .equal {
+      grid-column: span 2;
+      background: #00c853;
+      font-weight: bold;
+      box-shadow: 0 3px 0 #008b3a;
+    }
+
+    .equal:active {
+      background: #00b048;
+    }
+
+    .clear-btn {
+      background: #b91c1c;
+      box-shadow: 0 3px 0 #6e1010;
+    }
+
+    .clear-btn:active {
+      background: #9e1616;
+    }
+
+    .delete-btn {
+      background: #3b3b46;
+    }
+
+    /* pequenos ajustes responsivos */
+    @media (max-width: 450px) {
+      .app {
+        padding: 10px;
+      }
+      .panel {
+        padding: 16px;
+      }
+      button {
+        padding: 14px 0;
+        font-size: 1.2rem;
+      }
+      .display {
+        font-size: 2rem;
+        padding: 16px;
+      }
+      .clock {
+        font-size: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="panel">
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="display" id="display">0</div>
+    <div class="buttons">
+      <!-- Linha 1: AC, C, %, / (adaptei para ÷) -->
+      <button class="clear-btn" data-action="clear">C</button>
+      <button data-action="backspace">⌫</button>
+      <button data-op="/">÷</button>
+      <button data-op="*">×</button>
+
+      <!-- Linha 2: 7 8 9 - -->
+      <button data-num="7">7</button>
+      <button data-num="8">8</button>
+      <button data-num="9">9</button>
+      <button data-op="-">−</button>
+
+      <!-- Linha 3: 4 5 6 + -->
+      <button data-num="4">4</button>
+      <button data-num="5">5</button>
+      <button data-num="6">6</button>
+      <button data-op="+">+</button>
+
+      <!-- Linha 4: 1 2 3 . -->
+      <button data-num="1">1</button>
+      <button data-num="2">2</button>
+      <button data-num="3">3</button>
+      <button data-num=".">.</button>
+
+      <!-- Linha 5: 0, = (span 2) -->
+      <button data-num="0">0</button>
+      <button class="equal" data-action="equal">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const displayElement = document.getElementById('display');
+    
+    // Helper: atualizar display sem perder formato
+    let currentExpression = '0';
+    
+    function updateDisplay(value) {
+      if (value === undefined) value = currentExpression;
+      if (value === '' || value === null) value = '0';
+      displayElement.innerText = value;
+    }
+    
+    function setExpression(value, update = true) {
+      currentExpression = value;
+      if (update) updateDisplay();
+    }
+    
+    function addToExpression(char) {
+      let expr = currentExpression;
+      // Tratamento: se for '0' sozinho e adicionar número ou ponto, substitui
+      if (expr === '0' && (char !== '.' && !isNaN(parseInt(char)))) {
+        expr = char;
+      } 
+      // Se for '0' e adicionar ponto vira '0.'
+      else if (expr === '0' && char === '.') {
+        expr = '0.';
+      } 
+      else {
+        expr += char;
+      }
+      // Prevenir múltiplos zeros à esquerda (ex: 00+5 -> 0+5)
+      // Mas manter casos como 0.5 ok. Simples regex para evitar zeros iniciais duplicados
+      if (expr.match(/^0[0-9]/)) {
+        // caso "01" vira "1", "00" vira "0"
+        expr = expr.replace(/^0+(\d)/, '$1');
+      }
+      setExpression(expr);
+    }
+    
+    function clearAll() {
+      setExpression('0');
+    }
+    
+    function deleteLast() {
+      let expr = currentExpression;
+      if (expr.length <= 1 || (expr.length === 1 && expr !== '0')) {
+        setExpression('0');
+      } else {
+        let newExpr = expr.slice(0, -1);
+        if (newExpr === '') newExpr = '0';
+        setExpression(newExpr);
+      }
+    }
+    
+    function evaluateExpression() {
+      try {
+        let expr = currentExpression;
+        // substituir × e ÷ por operadores js
+        let jsExpr = expr.replace(/×/g, '*').replace(/÷/g, '/');
+        // Evitar avaliação perigosa - mas eval com expressão numérica é seguro pois é limitada
+        // Verificamos se contém apenas caracteres permitidos
+        if (!/^[\d+\-*/%.() ]+$/.test(jsExpr) && !/^[\d+\-*/%.() ]+$/.test(jsExpr.replace(/--/g, ''))) {
+          throw new Error('Expressão inválida');
+        }
+        // eslint-disable-next-line no-eval
+        let result = eval(jsExpr);
+        if (result === undefined || isNaN(result) || !isFinite(result)) {
+          throw new Error('Resultado inválido');
+        }
+        // Arredondar para evitar decimais enormes
+        if (typeof result === 'number') {
+          result = parseFloat(result.toFixed(8));
+          // Remove trailing zeros desnecessários
+          result = result.toString();
+        }
+        setExpression(result.toString());
+      } catch (e) {
+        setExpression('Erro');
+        setTimeout(() => {
+          if (displayElement.innerText === 'Erro') setExpression('0');
+        }, 1200);
+      }
+    }
+    
+    // função de vibração (se suportado)
+    function triggerVibration() {
+      if (navigator.vibrate) {
+        navigator.vibrate(12);
+      }
+    }
+    
+    // manipulação de cliques nos botões (event delegation)
+    const buttonsContainer = document.querySelector('.buttons');
+    buttonsContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      
+      triggerVibration();
+      
+      // Números
+      if (btn.hasAttribute('data-num')) {
+        const num = btn.getAttribute('data-num');
+        addToExpression(num);
+      }
+      // Operadores (data-op)
+      else if (btn.hasAttribute('data-op')) {
+        let op = btn.getAttribute('data-op');
+        // mapear visual: × e ÷ já são armazenados no display mas internamente no eval será tratado
+        // importante: quando clicar em × ou ÷, adicionamos o caractere Unicode exibido
+        if (op === '*') addToExpression('×');
+        else if (op === '/') addToExpression('÷');
+        else addToExpression(op);
+      }
+      else if (btn.hasAttribute('data-action')) {
+        const action = btn.getAttribute('data-action');
+        if (action === 'clear') {
+          clearAll();
+        } 
+        else if (action === 'backspace') {
+          deleteLast();
+        }
+        else if (action === 'equal') {
+          evaluateExpression();
+        }
+      }
+      // fallback para conteúdo textual caso use innerText (mas já mapeamos)
+      else {
+        const txt = btn.innerText;
+        if (txt === 'C') clearAll();
+        else if (txt === '⌫') deleteLast();
+        else if (txt === '=') evaluateExpression();
+        else if (txt === '+' || txt === '-' || txt === '×' || txt === '÷') {
+          let opMap = txt === '×' ? '×' : (txt === '÷' ? '÷' : txt);
+          addToExpression(opMap);
+        }
+        else if (!isNaN(parseInt(txt)) || txt === '.') {
+          addToExpression(txt);
+        }
+      }
+    });
+    
+    // Suporte ao teclado físico
+    window.addEventListener('keydown', (e) => {
+      const key = e.key;
+      // Previnir comportamento padrão para teclas especiais
+      const controlKeys = ['Enter', 'Backspace', 'Escape', 'Delete', '+', '-', '*', '/', '.', '0','1','2','3','4','5','6','7','8','9'];
+      if (controlKeys.includes(key) || (key >= '0' && key <= '9') || key === '.' || key === '+' || key === '-' || key === '*' || key === '/') {
+        // evita recarregar ou atalhos inteiros
+        if (key !== 'F5' && key !== 'F12') e.preventDefault();
+      }
+      
+      // Números e ponto
+      if (/^[0-9]$/.test(key)) {
+        addToExpression(key);
+        triggerVibration();
+      } 
+      else if (key === '.') {
+        addToExpression('.');
+        triggerVibration();
+      }
+      else if (key === '+') {
+        addToExpression('+');
+        triggerVibration();
+      }
+      else if (key === '-') {
+        addToExpression('-');
+        triggerVibration();
+      }
+      else if (key === '*') {
+        addToExpression('×');
+        triggerVibration();
+      }
+      else if (key === '/') {
+        addToExpression('÷');
+        triggerVibration();
+      }
+      else if (key === 'Enter') {
+        evaluateExpression();
+        triggerVibration();
+      }
+      else if (key === 'Backspace') {
+        deleteLast();
+        triggerVibration();
+      }
+      else if (key === 'Delete' || key === 'Escape') {
+        clearAll();
+        triggerVibration();
+      }
+    });
+    
+    // Inicializar com zero
+    setExpression('0');
+    
+    // Relógio dinâmico
+    function updateClock() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('pt-BR', { hour12: false });
+      const clockDiv = document.getElementById('clock');
+      if (clockDiv) clockDiv.innerText = timeStr;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+    
+    // verifica se a calculadora sofreu erro e usuário clica pra recomeçar? já implementado
+    // Para garantir que após "Erro" ao clicar em qualquer número, reset implícito
+    // Melhoria: ao clicar em número após erro, limpa erro automaticamente
+    const originalAdd = addToExpression;
+    window.addToExpression = addToExpression; // apenas debug, mas vou sobrescrever com segurança
+    // Garantir que ao digitar após estado "Erro" ou "Infinity" limpe
+    const safeAdd = (char) => {
+      if (displayElement.innerText === 'Erro' || displayElement.innerText === 'Infinity' || displayElement.innerText === 'NaN') {
+        setExpression('0');
+      }
+      originalAdd(char);
+    };
+    // substitui globalmente a função addToExpression usada nos listeners
+    // mas já ajustamos nos handlers internos, também modificar callback do teclado
+    // De forma elegante: substituir a referência
+    window.__add = safeAdd;
+    // porém os handlers usam addToExpression do closure, reassignando
+    // Recriamos as referências:
+    // Vamos trocar a função original pela segura sem quebrar
+    window.addToExpressionGlobal = safeAdd;
+    // Melhor: trocar a função interna utilizada nos eventos
+    // Como já tem referências, substituímos a função addToExpression
+    // Basta trocar a variável local addToExpression? Mas está no escopo da IIFE, faremos reatribuição em runtime
+    // Para isso, exportamos uma função global de override, mas melhor: redefinir 
+    // recapturar os handlers não é trivial. Vamos melhorar o evaluate e garantir que ao digitar após erro resetamos
+    const betterAdd = (char) => {
+      if (currentExpression === 'Erro' || currentExpression === 'Infinity' || currentExpression === 'NaN') {
+        setExpression('0');
+      }
+      let expr = currentExpression;
+      if (expr === '0' && (char !== '.' && !isNaN(parseInt(char)))) {
+        expr = char;
+      } 
+      else if (expr === '0' && char === '.') {
+        expr = '0.';
+      } 
+      else {
+        expr += char;
+      }
+      if (expr.match(/^0[0-9]/)) {
+        expr = expr.replace(/^0+(\d)/, '$1');
+      }
+      setExpression(expr);
+    };
+    
+    // substitui a função no escopo global do módulo usando a referencia interna
+    // para manter tudo consistente, substituímos as chamadas originais ligadas ao DOM
+    // Modo pragmático: remover event listeners antigos e recolocar com a nova função?
+    // é mais simples recriar os cliques dinâmicos mas já temos. Vou fazer upgrade substituindo as funções diretamente
+    // Como não existe conflito, sobrescrevo a função addToExpression original no closure através de uma redefinição?
+    // Melhor: usar um proxy e manter. Como estamos no escopo da IIFE e não podemos reescrever a referência do closure? Mas podemos capturar a instância.
+    // Solução robusta: substituir o manipulador de clique e teclado, mantendo a referência.
+    // Vamos reatribuir o manipulador de clique para usar a função melhorada.
+    // Remover listener anterior e aplicar novo com safeAdd.
+    const newClickHandler = (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      triggerVibration();
+      if (btn.hasAttribute('data-num')) {
+        const num = btn.getAttribute('data-num');
+        betterAdd(num);
+      }
+      else if (btn.hasAttribute('data-op')) {
+        let op = btn.getAttribute('data-op');
+        if (op === '*') betterAdd('×');
+        else if (op === '/') betterAdd('÷');
+        else betterAdd(op);
+      }
+      else if (btn.hasAttribute('data-action')) {
+        const action = btn.getAttribute('data-action');
+        if (action === 'clear') clearAll();
+        else if (action === 'backspace') deleteLast();
+        else if (action === 'equal') evaluateExpression();
+      }
+      else {
+        const txt = btn.innerText;
+        if (txt === 'C') clearAll();
+        else if (txt === '⌫') deleteLast();
+        else if (txt === '=') evaluateExpression();
+        else if (txt === '+' || txt === '-' || txt === '×' || txt === '÷') {
+          betterAdd(txt === '×' ? '×' : (txt === '÷' ? '÷' : txt));
+        }
+        else if (!isNaN(parseInt(txt)) || txt === '.') betterAdd(txt);
+      }
+    };
+    // Remove listener antigo e adiciona novo
+    buttonsContainer.removeEventListener('click', null); // não podemos remover facilmente, substituímos a referência.
+    // Mas o antigo estava anônimo, então clonamos o container? melhor simplesmente sobrescrever a função no event listener global?
+    // Para não gerar duplicidade, vamos remover todos os listeners do buttonsContainer e adicionar o nosso.
+    const newButtons = buttonsContainer.cloneNode(true);
+    buttonsContainer.parentNode.replaceChild(newButtons, buttonsContainer);
+    newButtons.addEventListener('click', newClickHandler);
+    
+    // Agora recriar também teclado com saferAdd
+    window.addEventListener('keydown', (e) => {
+      const key = e.key;
+      const controlKeys = ['Enter', 'Backspace', 'Escape', 'Delete', '+', '-', '*', '/', '.', '0','1','2','3','4','5','6','7','8','9'];
+      if (controlKeys.includes(key) || (key >= '0' && key <= '9') || key === '.' || key === '+' || key === '-' || key === '*' || key === '/') {
+        if (key !== 'F5' && key !== 'F12') e.preventDefault();
+      }
+      if (/^[0-9]$/.test(key)) {
+        betterAdd(key);
+        triggerVibration();
+      } 
+      else if (key === '.') {
+        betterAdd('.');
+        triggerVibration();
+      }
+      else if (key === '+') {
+        betterAdd('+');
+        triggerVibration();
+      }
+      else if (key === '-') {
+        betterAdd('-');
+        triggerVibration();
+      }
+      else if (key === '*') {
+        betterAdd('×');
+        triggerVibration();
+      }
+      else if (key === '/') {
+        betterAdd('÷');
+        triggerVibration();
+      }
+      else if (key === 'Enter') {
+        evaluateExpression();
+        triggerVibration();
+      }
+      else if (key === 'Backspace') {
+        deleteLast();
+        triggerVibration();
+      }
+      else if (key === 'Delete' || key === 'Escape') {
+        clearAll();
+        triggerVibration();
+      }
+    });
+    
+    // garantir que funções auxiliares usem a mesma lógica de limpeza no clear/delete/eval
+    window.clearAll = clearAll;
+    window.deleteLast = deleteLast;
+    window.evaluateExpression = evaluateExpression;
+    // e manter atualização display atualizada
+    // sincronizar operate
+    setExpression('0');
+    
+    // Adicionar efeito de foco nos botões mobile
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(err => console.log("Service worker error:", err));
+    }
+  })();
+</script>
+</body>
+</html>
